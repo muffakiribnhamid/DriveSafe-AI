@@ -78,7 +78,9 @@ def detect_drowsiness(username):
                 if COUNTER >= EAR_CONSEC_FRAMES:
                     print("😴 Drowsiness Detected!")
                     print("Brake Pressed")
+                    print("Slowing Down")
                     cv2.putText(frame, "Made by Muffakir Hamid and Bhat Zaid", (20, 120), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 3)
+                    
                     cv2.putText(frame, "Brake pressed!", (20, 90), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 3)
                     cv2.imshow("Driver Monitor", frame)
                     cv2.waitKey(500)  
