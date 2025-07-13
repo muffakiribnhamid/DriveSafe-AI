@@ -1,77 +1,88 @@
-import scipy.spatial as spatial
 import cv2
 import dlib
-from imutils import face_utils
-import numpy as np
+import scipy.spatial
+from alarm import play_alarm  # You must create alarm.py separately
 
-
-# This function will calculate the Eye Aspect Ratio (EAR) (Ankh kitne khuli hai)
+# Calculate Eye Aspect Ratio (EAR)
 def eye_aspect_ratio(eye):
-    A = dist.euclidean(eye[1], eye[5])
-    B = dist.euclidean(eye[2], eye[4])
-    C = dist.euclidean(eye[0], eye[3])
+    A = scipy.spatial.distance.euclidean(eye[1], eye[5])
+    B = scipy.spatial.distance.euclidean(eye[2], eye[4])
+    C = scipy.spatial.distance.euclidean(eye[0], eye[3])
     ear = (A + B) / (2.0 * C)
     return ear
 
-
-def eye_start_monitoring(threshold=0.25, consecutive_frames=20):
-    #Threshold: EAR value below which we consider eyes are closed
-    #Consecutive_frames: Number of consecutive frames with EAR below threshold before we consider eyes are closed
+# Drowsiness detection logic
+def detect_drowsiness():
+    EAR_THRESHOLD = 0.25
+    EAR_CONSEC_FRAMES = 20
     COUNTER = 0
 
+    print("📦 Loading face detector and predictor...")
     detector = dlib.get_frontal_face_detector()
     predictor = dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
-    (lStart, lEnd) = face_utils.FACIAL_LANDMARKS_IDXS["left_eye"]
-    (rStart, rEnd) = face_utils.FACIAL_LANDMARKS_IDXS["right_eye"]
 
-    #ye index deta hai :  range for eye landmarks from the 68-point facial model.
+    (lStart, lEnd) = (42, 48)
+    (rStart, rEnd) = (36, 42)
 
-    cap = cv2.VideoCapture(0)
-    
+    print("🎥 Accessing webcam...")
+    cap = None
+    for idx in range(3):
+        cap = cv2.VideoCapture(idx)
+        if cap.isOpened():
+            print(f"✅ Webcam opened at index {idx}.")
+            break
+        else:
+            cap.release()
+            cap = None
+    if cap is None or not cap.isOpened():
+        print("❌ Cannot access any webcam (tried 0, 1, 2). Check permissions or hardware.")
+        return False
+
+    import time
+    print("⏳ Warming up camera...")
+    for i in range(10):
+        ret, frame = cap.read()
+        time.sleep(0.05)
+    print("✅ Webcam initialized. Press 'q' to quit.")
+
     while True:
         ret, frame = cap.read()
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) #converted to gray for faster processing
+        if not ret or frame is None or frame.size == 0:
+            break
+
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         rects = detector(gray, 0)
 
         for rect in rects:
             shape = predictor(gray, rect)
-            shape = face_utils.shape_to_np(shape)
+            shape = [(shape.part(i).x, shape.part(i).y) for i in range(68)]
 
+            leftEye = shape[lStart:lEnd]
+            rightEye = shape[rStart:rEnd]
 
-            left_eye = shape[lStart:lEnd]
-            right_eye = shape[rStart:rEnd]
-            leftEAR = eye_aspect_ratio(left_eye)
-            rightEAR = eye_aspect_ratio(right_eye)
+            leftEAR = eye_aspect_ratio(leftEye)
+            rightEAR = eye_aspect_ratio(rightEye)
             ear = (leftEAR + rightEAR) / 2.0
 
-
-            #main work : if eyes are closed
-
-            if ear < threshold:
+            if ear < EAR_THRESHOLD:
                 COUNTER += 1
-                if COUNTER >= consecutive_frames:
-                    print("Drowsiness Alert")
-                    cv2.putText(frame, "Drowsiness Alert", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
-                    cv2.putText(frame, "Wake up!", (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
-                    COUNTER = 0
+                if COUNTER >= EAR_CONSEC_FRAMES:
+                    print("😴 Drowsiness Detected!")
+                    play_alarm()
+                    cap.release()
+                    cv2.destroyAllWindows()
+                    return True
             else:
                 COUNTER = 0
 
         cv2.imshow("Driver Monitor", frame)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
+
+        if cv2.waitKey(1) & 0xFF == ord("q"):
             break
 
     cap.release()
     cv2.destroyAllWindows()
+    return False
 
-            
-
-
-
-
-
-
-
-
-
-    
+if __name__ == "__main__":
+    detect_drowsiness()
