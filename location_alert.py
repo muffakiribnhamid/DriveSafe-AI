@@ -3,23 +3,15 @@ from geopy.geocoders import Nominatim
 import requests
 
 
-def get_location():
-    try:
-        response = requests.get("https://ipinfo.io/json/")
-        data = response.json()
-        loc = data['loc']
-        return loc
-    except Exception as e:
-        print(f"Error: {e}")
-        return None
         
-def send_alert(username, token):
-    loc = get_location()
-    if loc:
-        message = f"Drowsiness detected! Driver's last known location: {loc}"
-    else:
-        message = "Drowsiness detected! Unable to retrieve location."
-    url = f"https://api.callmebot.com/telegram/send.php?user=@{username}&text={requests.utils.quote(message)}&token={token}"
+def send_alert(username):
+    """
+    Send a Telegram alert via CallMeBot.
+    Args:
+        username (str): Telegram username (without @)
+    """
+    message = "Hey your driver is sort of drowsy! Please contact him ASAP"
+    url = f"https://api.callmebot.com/text.php?user={username}&text={requests.utils.quote(message)}"
     try:
         response = requests.get(url)
         if response.status_code == 200:
@@ -29,4 +21,3 @@ def send_alert(username, token):
     except Exception as e:
         print(f"❌ Exception while sending alert: {e}")
 
-get_location()

@@ -1,7 +1,8 @@
 import cv2
 import dlib
 import scipy.spatial
-from alarm import play_alarm  # You must create alarm.py separately
+from alarm import play_alarm
+from location_alert import send_alert
 
 # Calculate Eye Aspect Ratio (EAR)
 def eye_aspect_ratio(eye):
@@ -12,7 +13,13 @@ def eye_aspect_ratio(eye):
     return ear
 
 # Drowsiness detection logic
-def detect_drowsiness():
+def detect_drowsiness(username):
+    """
+    Detects drowsiness using webcam and facial landmarks.
+    If drowsiness is detected, plays alarm and sends Telegram alert.
+    Args:
+        username (str): Telegram username (without @)
+    """
     EAR_THRESHOLD = 0.25
     EAR_CONSEC_FRAMES = 20
     COUNTER = 0
@@ -45,10 +52,15 @@ def detect_drowsiness():
         time.sleep(0.05)
     print("✅ Webcam initialized. Press 'q' to quit.")
 
+    speed = 80  # Example speed, could be dynamic in a real system
+    brake_pressed = False
     while True:
         ret, frame = cap.read()
         if not ret or frame is None or frame.size == 0:
             break
+
+        # Overlay current speed on the frame
+        cv2.putText(frame, f"Current speed is {speed}", (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         rects = detector(gray, 0)
@@ -68,10 +80,19 @@ def detect_drowsiness():
                 COUNTER += 1
                 if COUNTER >= EAR_CONSEC_FRAMES:
                     print("😴 Drowsiness Detected!")
+                    print("Brake Pressed")
+                    # Overlay brake pressed on the frame
+                    cv2.putText(frame, "Brake pressed!", (20, 90), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 3)
+                    cv2.imshow("Driver Monitor", frame)
+                    cv2.waitKey(500)  # Show for half a second
+                    import threading
+                    alert_thread = threading.Thread(target=send_alert, args=(username,))
+                    alert_thread.start()
                     play_alarm()
                     cap.release()
                     cv2.destroyAllWindows()
-                    return True
+                    import sys
+                    sys.exit(0)
             else:
                 COUNTER = 0
 
@@ -83,6 +104,3 @@ def detect_drowsiness():
     cap.release()
     cv2.destroyAllWindows()
     return False
-
-if __name__ == "__main__":
-    detect_drowsiness()

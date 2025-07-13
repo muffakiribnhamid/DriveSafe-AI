@@ -1,9 +1,16 @@
-from drowsiness_detector import eye_start_monitoring
-from alarm import play_alarm
-from location_alert import get_location, send_alert
+"""
+Main entry point for Driver-AI Drowsiness Detection System.
+
+Set your Telegram username and CallMeBot token below.
+"""
+from drowsiness_detector import detect_drowsiness
+
+# === CONFIGURATION ===
+TELEGRAM_USERNAME = "Bhattzaid"  # Without @
 
 
 def main():
-    eye_start_monitoring()
-    play_alarm()
-    send_alert()
+    detect_drowsiness(TELEGRAM_USERNAME)
+
+if __name__ == "__main__":
+    main()
