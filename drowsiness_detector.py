@@ -16,33 +16,30 @@ def eye_aspect_ratio(eye):
 def detect_drowsiness(username):
     """
     Detects drowsiness using webcam and facial landmarks.
-    If drowsiness is detected, plays alarm and sends Telegram alert.
-    Args:
-        username (str): Telegram username (without @)
     """
     EAR_THRESHOLD = 0.25
     EAR_CONSEC_FRAMES = 20
     COUNTER = 0
 
-    print("📦 Loading face detector and predictor...")
+    print("Loading face detector and predictor...")
     detector = dlib.get_frontal_face_detector()
     predictor = dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
 
     (lStart, lEnd) = (42, 48)
     (rStart, rEnd) = (36, 42)
 
-    print("🎥 Accessing webcam...")
+    print("Accessing webcam...")
     cap = None
     for idx in range(3):
         cap = cv2.VideoCapture(idx)
         if cap.isOpened():
-            print(f"✅ Webcam opened at index {idx}.")
+            print(f"Webcam opened at index {idx}.")
             break
         else:
             cap.release()
             cap = None
     if cap is None or not cap.isOpened():
-        print("❌ Cannot access any webcam (tried 0, 1, 2). Check permissions or hardware.")
+        print(" Cannot access any webcam (tried 0, 1, 2). Check permissions or hardware.")
         return False
 
     import time
@@ -50,7 +47,7 @@ def detect_drowsiness(username):
     for i in range(10):
         ret, frame = cap.read()
         time.sleep(0.05)
-    print("✅ Webcam initialized. Press 'q' to quit.")
+    print("Webcam initialized. Press 'q' to quit.")
 
     speed = 80  # Example speed, could be dynamic in a real system
     brake_pressed = False
@@ -81,10 +78,10 @@ def detect_drowsiness(username):
                 if COUNTER >= EAR_CONSEC_FRAMES:
                     print("😴 Drowsiness Detected!")
                     print("Brake Pressed")
-                    # Overlay brake pressed on the frame
+                    cv2.putText(frame, "Made by Muffakir Hamid and Bhat Zaid", (20, 120), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 3)
                     cv2.putText(frame, "Brake pressed!", (20, 90), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 3)
                     cv2.imshow("Driver Monitor", frame)
-                    cv2.waitKey(500)  # Show for half a second
+                    cv2.waitKey(500)  
                     import threading
                     alert_thread = threading.Thread(target=send_alert, args=(username,))
                     alert_thread.start()
